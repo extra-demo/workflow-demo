@@ -27,3 +27,4 @@ Route::get('/customerReject', 'App\Http\Controllers\Controller@customerReject');
 Route::get('/customerConfirm', 'App\Http\Controllers\Controller@customerConfirm');
 Route::get('/reset', 'App\Http\Controllers\Controller@reset');
 Route::get('/img', 'App\Http\Controllers\Controller@img');
+Route::get('/show-flow', 'App\Http\Controllers\Controller@showFlow');

@@ -1,24 +1,8 @@
 <?php
 
+use App\Workflow\TiAnWorkflow;
+
 return [
-    'straight' => [
-        'type' => 'state_machine',
-        'marking_store' => [
-            'type' => 'single_state',
-        ],
-        'supports' => ['stdClass'],
-        'places' => ['a', 'b', 'c'],
-        'transitions' => [
-            't1' => [
-                'from' => 'a',
-                'to' => 'b',
-            ],
-            't2' => [
-                'from' => 'b',
-                'to' => 'c',
-            ],
-        ],
-    ],
     'ti_an' => [
         'type' => 'workflow',
         'marking_store' => [
@@ -26,51 +10,47 @@ return [
         ],
         'supports' => [\App\Models\TiAn::class],
         'places' => [
-            '待激活', // 待激活
-
-//            'd_t_a', // 待提案
-            '提案已上传', // 提案已上传
-
-            '待确认', // 待确认
-
-            '提案失败', // 提案失败
-            '已确认', // 已确认
-            '已关闭', // 已关闭
+            TiAnWorkflow::S_CREATED,
+            TiAnWorkflow::S_X_UPLOADED,
+            TiAnWorkflow::S_X_SUBMITTED,
+            TiAnWorkflow::S_X_FAILED,
+            TiAnWorkflow::S_X_CONFIRMED,
+            TiAnWorkflow::S_X_CLOSED,
         ],
         'transitions' => [
-            '上传提案' => [
-                'from' => '待激活',
-                'to' => '提案已上传',
+            TiAnWorkflow::A_X_UPLOAD => [
+                'from' => TiAnWorkflow::S_CREATED,
+                'to' => TiAnWorkflow::S_X_UPLOADED,
             ],
-            '未通过' => [
-                'from' => '提案已上传',
-                'to' => '待激活',
+            TiAnWorkflow::A_X_REJECT => [
+                'from' => TiAnWorkflow::S_X_UPLOADED,
+                'to' => TiAnWorkflow::S_CREATED,
             ],
-            '提交给客户' => [
-                'from' => '提案已上传',
-                'to' => '待确认',
+            TiAnWorkflow::A_X_SUBMIT => [
+                'from' => TiAnWorkflow::S_X_UPLOADED,
+                'to' => TiAnWorkflow::S_X_SUBMITTED,
             ],
-            '客户确认' => [
-                'from' => '待确认',
-                'to' => '已确认',
+            TiAnWorkflow::A_X_CUSTOMER_CONFIRM => [
+                'from' => TiAnWorkflow::S_X_SUBMITTED,
+                'to' => TiAnWorkflow::S_X_CONFIRMED,
             ],
-            '客户拒绝' => [
-                'from' => '待确认',
-                'to' => '提案失败',
+            TiAnWorkflow::A_X_CUSTOMER_REJECT => [
+                'from' => TiAnWorkflow::S_X_SUBMITTED,
+                'to' => TiAnWorkflow::S_X_FAILED,
             ],
-            '管理员代确认' => [
-                'from' => '待确认',
-                'to' => '已确认',
+            TiAnWorkflow::A_X_ADMIN_CONFIRM => [
+                'from' => TiAnWorkflow::S_X_SUBMITTED,
+                'to' => TiAnWorkflow::S_X_CONFIRMED,
             ],
-            '关闭' => [
+            TiAnWorkflow::A_CLOSE => [
                 'from' => [
-                    '待激活',
-                    '提案已上传'
+                    TiAnWorkflow::S_CREATED,
+                    TiAnWorkflow::S_X_UPLOADED,
                 ],
-                'to' => '已关闭'
+                'to' => TiAnWorkflow::S_X_CLOSED,
             ]
         ],
-        'initial_places' => ['待激活'],
+        'initial_places' => [TiAnWorkflow::S_CREATED],
         'events_to_dispatch' => [
 //            Symfony\Component\Workflow\WorkflowEvents::ENTER,
 //            Symfony\Component\Workflow\WorkflowEvents::LEAVE,
@@ -79,36 +59,5 @@ return [
 //            Symfony\Component\Workflow\WorkflowEvents::COMPLETED,
 //            Symfony\Component\Workflow\WorkflowEvents::ANNOUNCE,
         ],
-    ],
-    'music' => [
-        'type' => 'workflow',
-        'marking_store' => [
-            'type' => 'single_state',
-        ],
-        'supports' => [\App\Models\TiAn::class],
-        'places' => [
-            'stop',
-            'playing',
-            'pause'
-        ],
-        'transitions' => [
-            'pause' => [
-                'from' => 'playing',
-                'to' => 'pause',
-            ],
-            'stop' => [
-                'from' => 'playing',
-                'to' => 'stop',
-            ],
-            'play' => [
-                'from' => [
-                    'stop',
-                    'pause'
-                ],
-                'to' => 'playing'
-            ]
-        ],
-        'initial_places' => ['stop'],
-        'events_to_dispatch' => [],
     ],
 ];

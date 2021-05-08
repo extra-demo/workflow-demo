@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TiAn;
+use App\Workflow\TiAnWorkflow;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -18,7 +19,7 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    const WORKFLOW_NAME = 'ti_an';
+    const WORKFLOW_NAME = TiAnWorkflow::NAME;
 
     /**
      * @var WorkflowRegistry
@@ -33,17 +34,17 @@ class Controller extends BaseController
         $this->workflowRegistry = app('workflow');
     }
 
-    public function reset()
+    public function reset(Request $request)
     {
-        $m = TiAn::query()->find(1);
+        $id = $request->get('id');
+        $m = TiAn::query()->find($id);
         $m->marking = null;
         $m->uploaded = false;
         $m->remark = null;
         $m->save();
 
-        return redirect('/show');
+        return redirect('/show?id=' . $id);
     }
-
 
     public function show(Request $request)
     {
@@ -54,7 +55,7 @@ class Controller extends BaseController
 
         $m = TiAn::query()->find($id);
 
-        $v = $this->workflowRegistry->get($m, 'ti_an');
+        $v = $this->workflowRegistry->get($m, TiAnWorkflow::NAME);
 
 
         return view('workflow', [
@@ -65,8 +66,15 @@ class Controller extends BaseController
 
     public function img(Request $request)
     {
-        $subject = TiAn::query()->find($request->get('id'));
-        $workflow = $this->workflowRegistry->get($subject, 'ti_an');
+        $workflowName = $request->get('workflow');
+        $id = $request->get('id', 1);
+
+        if (!$workflowName) {
+            return redirect(sprintf("/img?workflow=%s&id=%s", static::WORKFLOW_NAME, $id));
+        }
+
+        $subject = TiAn::query()->find($id);
+        $workflow = $this->workflowRegistry->get($subject, $workflowName);
         $definition = $workflow->getDefinition();
 
         $dumper = new GraphvizDumper();
@@ -87,13 +95,12 @@ class Controller extends BaseController
 
         $v = $this->workflowRegistry->get($m, static::WORKFLOW_NAME);
 
-        $action = '上传提案';
+        $action = TiAnWorkflow::A_X_UPLOAD;
         $error = '----';
 
         if (1 == $request->get('has')) {
             $m->uploaded = true;
         }
-
 
         try {
             $v->apply($m, $action);
@@ -112,7 +119,7 @@ class Controller extends BaseController
 
         $v = $this->workflowRegistry->get($m, static::WORKFLOW_NAME);
 
-        $action = '关闭';
+        $action = TiAnWorkflow::A_CLOSE;
         $error = '';
 
         try {
@@ -132,7 +139,7 @@ class Controller extends BaseController
 
         $v = $this->workflowRegistry->get($m, static::WORKFLOW_NAME);
 
-        $action = '未通过';
+        $action = TiAnWorkflow::A_X_REJECT;
         $error = '';
 
         try {
@@ -153,7 +160,7 @@ class Controller extends BaseController
 
         $v = $this->workflowRegistry->get($m, static::WORKFLOW_NAME);
 
-        $action = '提交给客户';
+        $action = TiAnWorkflow::A_X_SUBMIT;
         $error = '';
 
         try {
@@ -173,7 +180,7 @@ class Controller extends BaseController
 
         $v = $this->workflowRegistry->get($m, static::WORKFLOW_NAME);
 
-        $action = '客户确认';
+        $action = TiAnWorkflow::A_X_CUSTOMER_CONFIRM;
         $error = '';
 
         try {
@@ -193,7 +200,7 @@ class Controller extends BaseController
 
         $v = $this->workflowRegistry->get($m, static::WORKFLOW_NAME);
 
-        $action = '管理员代确认';
+        $action = TiAnWorkflow::A_X_ADMIN_CONFIRM;
         $error = '';
 
         try {
@@ -213,7 +220,7 @@ class Controller extends BaseController
 
         $v = $this->workflowRegistry->get($m, static::WORKFLOW_NAME);
 
-        $action = '客户拒绝';
+        $action = TiAnWorkflow::A_X_CUSTOMER_REJECT;
         $error = '';
 
         try {
@@ -225,5 +232,16 @@ class Controller extends BaseController
         }
 
         return back()->withErrors(['e' => $error]);
+    }
+
+    public function showFlow(Request $request)
+    {
+        $workflowName = $request->get('workflow');
+
+        if (!$workflowName) {
+            return redirect('/show-flow?workflow=' . static::WORKFLOW_NAME);
+        }
+
+        return view('flow-show');
     }
 }
